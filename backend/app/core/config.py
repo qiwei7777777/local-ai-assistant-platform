@@ -5,6 +5,9 @@ from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+BACKEND_DIR = Path(__file__).resolve().parents[2]
+
+
 class Settings(BaseSettings):
     app_name: str = Field(default="Local AI Assistant Platform", alias="APP_NAME")
     app_version: str = Field(default="1.2.0", alias="APP_VERSION")
@@ -62,6 +65,16 @@ class Settings(BaseSettings):
     rag_chunk_overlap: int = Field(default=120, alias="RAG_CHUNK_OVERLAP")
     rag_top_k: int = Field(default=5, alias="RAG_TOP_K")
     memory_top_k: int = Field(default=3, alias="MEMORY_TOP_K")
+    code_workspace_root: str = Field(default="..", alias="CODE_WORKSPACE_ROOT")
+    code_agent_max_file_bytes: int = Field(default=120_000, alias="CODE_AGENT_MAX_FILE_BYTES")
+    code_agent_command_timeout: int = Field(default=60, alias="CODE_AGENT_COMMAND_TIMEOUT")
+
+    @property
+    def code_workspace_path(self) -> Path:
+        workspace_root = Path(self.code_workspace_root)
+        if workspace_root.is_absolute():
+            return workspace_root.resolve()
+        return (BACKEND_DIR / workspace_root).resolve()
 
     model_config = SettingsConfigDict(
         env_file=(".env", "../.env"),

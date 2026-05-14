@@ -8,6 +8,7 @@ from app.core.config import Settings, get_settings
 from app.db.session import get_db_session
 from app.integrations.ollama import OllamaClient
 from app.services.chat_service import ChatService
+from app.services.code_agent_service import CodeAgentService
 from app.services.file_service import FileService
 from app.services.health_service import HealthService
 from app.services.knowledge_base_service import KnowledgeBaseService
@@ -53,6 +54,13 @@ def get_chat_service(
     ollama_client: OllamaClient = Depends(get_ollama_client),
 ) -> ChatService:
     return ChatService(db, settings, ollama_client)
+
+
+def get_code_agent_service(
+    settings: Settings = Depends(get_settings_dependency),
+    ollama_client: OllamaClient = Depends(get_ollama_client),
+) -> CodeAgentService:
+    return CodeAgentService(settings, ollama_client)
 
 
 def get_session_service(

@@ -110,6 +110,7 @@ ngrok http 3000
 - File upload parses supported text-bearing files
 - Knowledge-base search returns at least one relevant hit for a seeded document
 - Explicit memory can be created, used in chat, and deleted
+- Code Agent can inspect the repository, read a selected file, generate a plan, and run `git status --short`
 - SDK example can call `/api/chat`
 
 ## Troubleshooting

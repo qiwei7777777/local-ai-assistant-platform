@@ -11,6 +11,7 @@ A local-first AI assistant workspace built with Next.js, FastAPI, SQLite, and Ol
 - Lightweight RAG over uploaded text, Markdown, PDF, and Word files
 - Explicit long-term memory that can be enabled per chat request
 - Python SDK and runnable examples for automation or integration demos
+- Code Agent workspace for repository inspection, file-context selection, implementation planning, and safe validation commands
 - LAN-friendly configuration plus same-origin `/api` proxy mode for simple public demos through tools such as ngrok
 - Developer console that checks backend health, model availability, API routing mode, app version, and environment
 
@@ -155,6 +156,10 @@ GET  /api/health
 GET  /api/models
 POST /api/chat
 POST /api/chat/stream
+GET  /api/code-agent/workspace
+POST /api/code-agent/read
+POST /api/code-agent/plan
+POST /api/code-agent/command
 GET  /api/sessions
 POST /api/files/upload
 POST /api/knowledge-bases
@@ -167,3 +172,13 @@ POST /api/memories
 Version: `1.2.0`
 
 This repository is ready for GitHub portfolio display after running the validation commands above. Local runtime data, logs, virtual environments, `node_modules`, build output, and SQLite data are excluded by `.gitignore`.
+
+## Code Agent Safety Model
+
+The Code Agent is intentionally review-first:
+
+- It can inspect readable source files inside `CODE_WORKSPACE_ROOT`
+- It ignores `.git`, `.next`, `.venv`, `node_modules`, local data, and cache directories
+- It generates implementation plans and patch-style guidance instead of silently editing files
+- It runs only backend-whitelisted validation commands
+- It returns command output and exit codes for auditability

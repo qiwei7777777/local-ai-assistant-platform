@@ -154,3 +154,40 @@ export type Memory = {
 export type MemoryListData = {
   memories: Memory[];
 };
+
+export type CodeFileSummary = {
+  path: string;
+  name: string;
+  extension: string;
+  size: number;
+  modified_at: string;
+};
+
+export type CodeWorkspaceData = {
+  root: string;
+  files: CodeFileSummary[];
+  ignored_directories: string[];
+  allowed_commands: string[];
+};
+
+export type CodeFileData = {
+  path: string;
+  language: string;
+  size: number;
+  content: string;
+};
+
+export type CodePlanData = {
+  task: string;
+  model: string;
+  context_files: CodeFileData[];
+  plan: string;
+};
+
+export type CodeCommandData = {
+  command: string;
+  exit_code: number;
+  stdout: string;
+  stderr: string;
+  duration_ms: number;
+};

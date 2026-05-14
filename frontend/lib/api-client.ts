@@ -2,6 +2,10 @@ import { appConfig } from "@/lib/config";
 import type {
   ApiResponse,
   ChatResult,
+  CodeCommandData,
+  CodeFileData,
+  CodePlanData,
+  CodeWorkspaceData,
   ChatStreamDoneEvent,
   ChatStreamErrorEvent,
   FileListData,
@@ -505,6 +509,36 @@ export const apiClient = {
   deleteMemory(memoryId: string) {
     return request<{ deleted: boolean; memory_id: string }>(`/api/memories/${memoryId}`, {
       method: "DELETE",
+    });
+  },
+  inspectCodeWorkspace() {
+    return request<CodeWorkspaceData>("/api/code-agent/workspace");
+  },
+  readCodeFile(path: string) {
+    return request<CodeFileData>("/api/code-agent/read", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ path }),
+    });
+  },
+  createCodePlan(payload: { task: string; file_paths: string[]; model?: string }) {
+    return request<CodePlanData>("/api/code-agent/plan", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+  },
+  runCodeCommand(command: string) {
+    return request<CodeCommandData>("/api/code-agent/command", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ command }),
     });
   },
 };

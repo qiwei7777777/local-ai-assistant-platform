@@ -372,6 +372,51 @@ class BackendApiTests(unittest.TestCase):
         self.assertIn("event: error", events[0])
         self.assertIn("EMPTY_MODEL_RESPONSE", events[0])
 
+    def test_code_agent_workspace_read_plan_and_command(self) -> None:
+        workspace_response = self.client.get("/api/code-agent/workspace")
+        self.assertEqual(workspace_response.status_code, 200)
+        workspace_data = workspace_response.json()["data"]
+        paths = [item["path"] for item in workspace_data["files"]]
+        self.assertIn("README.md", paths)
+        self.assertIn("git status --short", workspace_data["allowed_commands"])
+
+        read_response = self.client.post("/api/code-agent/read", json={"path": "README.md"})
+        self.assertEqual(read_response.status_code, 200)
+        read_data = read_response.json()["data"]
+        self.assertEqual(read_data["path"], "README.md")
+        self.assertIn("Local AI Assistant Platform", read_data["content"])
+
+        blocked_read = self.client.post("/api/code-agent/read", json={"path": "../outside.txt"})
+        self.assertEqual(blocked_read.status_code, 400)
+        self.assertEqual(blocked_read.json()["error"]["code"], "CODE_PATH_OUTSIDE_WORKSPACE")
+
+        plan_response = self.client.post(
+            "/api/code-agent/plan",
+            json={
+                "task": "Suggest one README improvement.",
+                "file_paths": ["README.md"],
+                "model": "gemma4:e4b",
+            },
+        )
+        self.assertEqual(plan_response.status_code, 200)
+        plan_data = plan_response.json()["data"]
+        self.assertEqual(plan_data["model"], "gemma4:e4b")
+        self.assertEqual(plan_data["context_files"][0]["path"], "README.md")
+        self.assertTrue(plan_data["plan"])
+
+        blocked_command = self.client.post("/api/code-agent/command", json={"command": "dir"})
+        self.assertEqual(blocked_command.status_code, 400)
+        self.assertEqual(blocked_command.json()["error"]["code"], "CODE_COMMAND_NOT_ALLOWED")
+
+        command_response = self.client.post(
+            "/api/code-agent/command",
+            json={"command": "git status --short"},
+        )
+        self.assertEqual(command_response.status_code, 200)
+        command_data = command_response.json()["data"]
+        self.assertEqual(command_data["command"], "git status --short")
+        self.assertIsInstance(command_data["exit_code"], int)
+
 
 if __name__ == "__main__":
     unittest.main()

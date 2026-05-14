@@ -6,18 +6,22 @@ The project fits a visible 2026 direction: local models are becoming practical p
 
 ## Sources Checked
 
-- Google Developers Blog, April 2, 2026: "Bring state-of-the-art agentic skills to the edge with Gemma 4"  
+- Google Developers Blog, April 2, 2026: "Bring state-of-the-art agentic skills to the edge with Gemma 4"
   https://developers.googleblog.com/bring-state-of-the-art-agentic-skills-to-the-edge-with-gemma-4/
-- Google Blog, "Gemma 4: Our most capable open models to date"  
+- Google Blog, "Gemma 4: Our most capable open models to date"
   https://blog.google/innovation-and-ai/technology/developers-tools/gemma-4/
-- Ollama documentation, OpenAI compatibility  
+- Ollama documentation, OpenAI compatibility
   https://docs.ollama.com/openai
-- Ollama documentation, Streaming  
+- Ollama documentation, Streaming
   https://docs.ollama.com/capabilities/streaming
-- Ollama Blog, "Streaming responses with tool calling", May 28, 2025  
+- Ollama Blog, "Streaming responses with tool calling", May 28, 2025
   https://ollama.com/blog/streaming-tool
-- Ollama Blog, "Structured outputs", December 6, 2024  
+- Ollama Blog, "Structured outputs", December 6, 2024
   https://ollama.com/blog/structured-outputs
+- OpenClaw Agent Workspace documentation
+  https://openclawlab.com/en/docs/concepts/agent-workspace/
+- OpenCode, terminal and IDE coding agent positioning
+  https://opencode.gr.com/
 
 ## Relevant Trends
 
@@ -37,6 +41,10 @@ Streaming is now expected in chat products. The project supports server-sent eve
 
 Ollama supports structured outputs and streaming tool calls for supported models. This project already has RAG, file handling, and memory. The next logical product step is turning those capabilities into model-callable tools or structured extraction workflows.
 
+### Workspace-aware coding agents
+
+OpenClaw and OpenCode-style products emphasize an agent workspace rather than a single chat surface: repository context, command execution, audit trails, and reviewable file changes. The Code Agent upgrade borrows this product pattern while keeping stricter local safety boundaries.
+
 ### Edge-capable Gemma models
 
 Gemma 4 strengthens the story for running capable models close to the user. The project default `gemma4:e4b` is therefore a good portfolio choice: it communicates current local-model awareness while keeping the demo runnable on ordinary hardware.
@@ -46,6 +54,7 @@ Gemma 4 strengthens the story for running capable models close to the user. The 
 - Position the repository as a complete local AI assistant platform instead of a temporary model test.
 - Keep the Ollama integration isolated to preserve future OpenAI-compatible adapter options.
 - Improve diagnostics by exposing app version and environment in `/api/health`.
+- Add a Code Agent workspace for repository inspection, selected-file context, model-generated implementation plans, and whitelisted validation commands.
 - Document local, LAN, and single-URL demo modes clearly for reviewers.
 - Remove hardcoded private LAN IPs from examples.
 - Rewrite README and architecture docs in clean English for GitHub display.

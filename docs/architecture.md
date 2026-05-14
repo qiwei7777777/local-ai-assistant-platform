@@ -115,3 +115,22 @@ External single-URL mode:
 - Persist user-facing settings through a backend settings endpoint
 - Add tool-calling workflows for supported local models
 - Add structured-output workflows for extraction and document automation
+
+## Code Agent Workspace
+
+The Code Agent layer adds a controlled developer-workbench surface:
+
+```text
+Frontend Code Agent page
+  -> GET  /api/code-agent/workspace
+  -> POST /api/code-agent/read
+  -> POST /api/code-agent/plan
+  -> POST /api/code-agent/command
+Backend CodeAgentService
+  -> bounded repository scan
+  -> file read guardrails
+  -> Ollama implementation planning
+  -> command whitelist execution
+```
+
+This is deliberately review-first. The model can reason over selected files and produce patch-style guidance, but it cannot silently write files or run arbitrary shell commands.

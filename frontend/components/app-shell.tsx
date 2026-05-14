@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpenText, Bot, Brain, Layers3, Settings2, Sparkles } from "lucide-react";
+import { BookOpenText, Bot, Brain, Code2, Layers3, Settings2, Sparkles } from "lucide-react";
 
 import { appConfig } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
 const navigation = [
   { href: "/", label: "Chat", icon: Sparkles },
+  { href: "/code-agent", label: "Code Agent", icon: Code2 },
   { href: "/knowledge-bases", label: "Knowledge", icon: BookOpenText },
   { href: "/memories", label: "Memory", icon: Brain },
   { href: "/settings", label: "Settings", icon: Settings2 },
