@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(circle at top left, rgba(213, 229, 255, 0.9), transparent 28%),
+    linear-gradient(180deg, #f9fbff 0%, #f5f7fb 100%);
+  color: #101828;
+}
+
+body {
+  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+.chat-markdown {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.85;
+}
+
+.chat-markdown > :first-child {
+  margin-top: 0;
+}
+
+.chat-markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.chat-markdown p {
+  margin: 0.85rem 0;
+}
+
+.chat-markdown h1,
+.chat-markdown h2,
+.chat-markdown h3 {
+  margin: 1.25rem 0 0.75rem;
+  color: #0f172a;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.chat-markdown h1 {
+  font-size: 1.375rem;
+}
+
+.chat-markdown h2 {
+  font-size: 1.2rem;
+}
+
+.chat-markdown h3 {
+  font-size: 1.05rem;
+}
+
+.chat-markdown ul,
+.chat-markdown ol {
+  margin: 0.9rem 0;
+  padding-left: 1.45rem;
+}
+
+.chat-markdown li {
+  margin: 0.35rem 0;
+  padding-left: 0.2rem;
+}
+
+.chat-markdown blockquote {
+  margin: 1rem 0;
+  border-left: 4px solid #cbd5e1;
+  padding: 0.125rem 0 0.125rem 1rem;
+  color: #475569;
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.chat-markdown hr {
+  margin: 1.25rem 0;
+  border: 0;
+  border-top: 1px solid #dbe2ea;
+}
+
+.chat-markdown strong {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.chat-markdown em {
+  font-style: italic;
+}
