@@ -30,6 +30,8 @@ class DeleteResult(BaseModel):
 
 class HealthStatus(BaseModel):
     app: str
+    version: str
+    environment: str
     database: str
     ollama: str
     default_model: str
@@ -139,7 +141,7 @@ class RetrievalHit(BaseModel):
     file_id: str
     file_name: str
     chunk_index: int
-    score: int
+    score: float
     content: str
 
 
@@ -159,3 +161,85 @@ class Memory(BaseModel):
 
 class MemoryListResult(BaseModel):
     memories: list[Memory]
+
+
+# ── Code Agent ────────────────────────────────────────────
+class CodeFileSummary(BaseModel):
+    path: str
+    name: str
+    extension: str
+    size: int
+    modified_at: str
+
+
+class CodeWorkspaceData(BaseModel):
+    root: str
+    files: list[CodeFileSummary]
+    ignored_directories: list[str]
+    allowed_commands: list[str]
+
+
+class CodeFileData(BaseModel):
+    path: str
+    language: str
+    size: int
+    content: str
+
+
+class CodePlanData(BaseModel):
+    task: str
+    model: str
+    context_files: list[CodeFileData]
+    plan: str
+
+
+class CodeGeneratedFile(BaseModel):
+    path: str
+    content: str
+    language: str
+    action: str
+    exists: bool
+
+
+class CodeGenerateData(BaseModel):
+    task: str
+    model: str
+    target_directory: str
+    files: list[CodeGeneratedFile]
+    notes: str
+
+
+class CodeWrittenFile(BaseModel):
+    path: str
+    bytes: int
+    created: bool
+
+
+class CodeWriteData(BaseModel):
+    written_files: list[CodeWrittenFile]
+
+
+class CodeCommandData(BaseModel):
+    command: str
+    exit_code: int
+    stdout: str
+    stderr: str
+    duration_ms: int
+
+
+# ── Agent ─────────────────────────────────────────────────
+class AgentToolCallRecord(BaseModel):
+    tool_name: str
+    arguments: dict[str, Any]
+    result_summary: str
+    duration_ms: int
+
+
+class AgentChatData(BaseModel):
+    session_id: str
+    user_message_id: str
+    assistant_message_id: str
+    model: str
+    content: str
+    tool_calls_made: list[AgentToolCallRecord]
+    iterations: int

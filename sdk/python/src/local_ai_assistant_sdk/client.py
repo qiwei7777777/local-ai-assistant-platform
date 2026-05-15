@@ -12,8 +12,16 @@ from local_ai_assistant_sdk.exceptions import (
     LocalAIAssistantResponseError,
 )
 from local_ai_assistant_sdk.types import (
+    AgentChatData,
     APIResponse,
     ChatResult,
+    CodeCommandData,
+    CodeFileData,
+    CodeGenerateData,
+    CodeGeneratedFile,
+    CodePlanData,
+    CodeWorkspaceData,
+    CodeWriteData,
     DeleteResult,
     FileListResult,
     FileRecord,
@@ -210,6 +218,107 @@ class LocalAIAssistantClient:
             "DELETE",
             f"/api/memories/{memory_id}",
             model=DeleteResult,
+        )
+
+    def inspect_code_workspace(self) -> CodeWorkspaceData:
+        """Inspect the code agent's configured workspace."""
+        return self._request("GET", "/api/code-agent/workspace", model=CodeWorkspaceData)
+
+    def read_code_file(self, path: str) -> CodeFileData:
+        """Read a single file from the code workspace."""
+        return self._request(
+            "POST",
+            "/api/code-agent/read",
+            json={"path": path},
+            model=CodeFileData,
+        )
+
+    def create_code_plan(
+        self,
+        task: str,
+        file_paths: list[str],
+        *,
+        model: str | None = None,
+    ) -> CodePlanData:
+        """Ask the model for an implementation plan based on context files."""
+        return self._request(
+            "POST",
+            "/api/code-agent/plan",
+            json={"task": task, "file_paths": file_paths, "model": model},
+            model=CodePlanData,
+        )
+
+    def generate_code_files(
+        self,
+        task: str,
+        target_directory: str,
+        file_paths: list[str],
+        *,
+        model: str | None = None,
+    ) -> CodeGenerateData:
+        """Ask the model to generate file drafts as structured JSON."""
+        return self._request(
+            "POST",
+            "/api/code-agent/generate",
+            json={
+                "task": task,
+                "target_directory": target_directory,
+                "file_paths": file_paths,
+                "model": model,
+            },
+            model=CodeGenerateData,
+        )
+
+    def write_code_files(
+        self,
+        files: list[CodeGeneratedFile] | list[dict],
+        *,
+        overwrite: bool = False,
+    ) -> CodeWriteData:
+        """Write generated files to the workspace."""
+        payload_files: list[dict] = []
+        for f in files:
+            if isinstance(f, dict):
+                payload_files.append(f)
+            else:
+                payload_files.append(f.model_dump())
+        return self._request(
+            "POST",
+            "/api/code-agent/write",
+            json={"files": payload_files, "overwrite": overwrite},
+            model=CodeWriteData,
+        )
+
+    def run_code_command(self, command: str) -> CodeCommandData:
+        """Run a whitelisted command in the workspace."""
+        return self._request(
+            "POST",
+            "/api/code-agent/command",
+            json={"command": command},
+            model=CodeCommandData,
+        )
+
+    def agent_chat(
+        self,
+        message: str,
+        *,
+        session_id: str | None = None,
+        model: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+    ) -> AgentChatData:
+        """Send a message to the tool-calling agent."""
+        return self._request(
+            "POST",
+            "/api/agent/chat",
+            json={
+                "message": message,
+                "session_id": session_id,
+                "model": model,
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+            },
+            model=AgentChatData,
         )
 
     def _request(

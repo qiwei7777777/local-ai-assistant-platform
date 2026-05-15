@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.config import Settings, get_settings
 from app.db.session import get_db_session
 from app.integrations.ollama import OllamaClient
+from app.services.agent_service import AgentService
 from app.services.chat_service import ChatService
 from app.services.code_agent_service import CodeAgentService
 from app.services.file_service import FileService
@@ -87,6 +88,14 @@ def get_retrieval_service(
     settings: Settings = Depends(get_settings_dependency),
 ) -> RetrievalService:
     return RetrievalService(settings)
+
+
+def get_agent_service(
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings_dependency),
+    ollama_client: OllamaClient = Depends(get_ollama_client),
+) -> AgentService:
+    return AgentService(db, settings, ollama_client)
 
 
 def get_memory_service(

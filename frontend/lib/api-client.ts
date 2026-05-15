@@ -1,10 +1,15 @@
 import { appConfig } from "@/lib/config";
 import type {
+  AgentChatData,
+  AgentToolCall,
   ApiResponse,
   ChatResult,
   CodeCommandData,
   CodeFileData,
+  CodeGenerateData,
+  CodeGeneratedFile,
   CodePlanData,
+  CodeWriteData,
   CodeWorkspaceData,
   ChatStreamDoneEvent,
   ChatStreamErrorEvent,
@@ -55,8 +60,13 @@ type ChatPayload = {
 };
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 15000;
+const CODE_AGENT_REQUEST_TIMEOUT_MS = 300000;
 const DEFAULT_STREAM_START_TIMEOUT_MS = 120000;
 const DEFAULT_STREAM_IDLE_TIMEOUT_MS = 60000;
+
+type ApiRequestInit = RequestInit & {
+  timeoutMs?: number;
+};
 
 function isAbortError(error: unknown) {
   return error instanceof DOMException && error.name === "AbortError";
@@ -118,15 +128,16 @@ async function parseErrorResponse(response: Response) {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function request<T>(path: string, init?: ApiRequestInit): Promise<T> {
   let response: Response;
-  const timeoutSignal = createTimeoutSignal(init?.signal ?? undefined);
+  const { timeoutMs, ...fetchInit } = init ?? {};
+  const timeoutSignal = createTimeoutSignal(fetchInit.signal ?? undefined, timeoutMs);
 
   try {
     response = await fetch(buildUrl(path), {
-      ...init,
+      ...fetchInit,
       headers: {
-        ...(init?.headers ?? {}),
+        ...(fetchInit.headers ?? {}),
       },
       cache: "no-store",
       signal: timeoutSignal.signal,
@@ -526,6 +537,26 @@ export const apiClient = {
   createCodePlan(payload: { task: string; file_paths: string[]; model?: string }) {
     return request<CodePlanData>("/api/code-agent/plan", {
       method: "POST",
+      timeoutMs: CODE_AGENT_REQUEST_TIMEOUT_MS,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+  },
+  generateCodeFiles(payload: { task: string; target_directory: string; file_paths: string[]; model?: string }) {
+    return request<CodeGenerateData>("/api/code-agent/generate", {
+      method: "POST",
+      timeoutMs: CODE_AGENT_REQUEST_TIMEOUT_MS,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+  },
+  writeCodeFiles(payload: { files: CodeGeneratedFile[]; overwrite?: boolean }) {
+    return request<CodeWriteData>("/api/code-agent/write", {
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
@@ -535,10 +566,27 @@ export const apiClient = {
   runCodeCommand(command: string) {
     return request<CodeCommandData>("/api/code-agent/command", {
       method: "POST",
+      timeoutMs: CODE_AGENT_REQUEST_TIMEOUT_MS,
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ command }),
+    });
+  },
+  agentChat(payload: {
+    message: string;
+    session_id?: string;
+    model?: string;
+    temperature?: number;
+    max_tokens?: number;
+  }) {
+    return request<AgentChatData>("/api/agent/chat", {
+      method: "POST",
+      timeoutMs: CODE_AGENT_REQUEST_TIMEOUT_MS,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
     });
   },
 };

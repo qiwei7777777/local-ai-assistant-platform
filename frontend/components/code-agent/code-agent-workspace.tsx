@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Bot, FileCode2, LoaderCircle, Play, RefreshCw, ShieldCheck, Wand2 } from "lucide-react";
+import { FileCode2, LoaderCircle, Play, RefreshCw, Save, ShieldCheck, Wand2 } from "lucide-react";
 
 import { EmptyState, ErrorState, LoadingState } from "@/components/state-panels";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { apiClient } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
-import type { CodeCommandData, CodeFileData, CodeFileSummary, CodeWorkspaceData } from "@/types/api";
+import type {
+  CodeCommandData,
+  CodeFileData,
+  CodeFileSummary,
+  CodeGenerateData,
+  CodeWorkspaceData,
+  CodeWriteData,
+} from "@/types/api";
 
 function formatSize(size: number) {
   if (size < 1024) return `${size} B`;
@@ -24,12 +31,17 @@ export function CodeAgentWorkspace() {
   const [selectedPaths, setSelectedPaths] = useState<string[]>(["README.md"]);
   const [activeFile, setActiveFile] = useState<CodeFileData | null>(null);
   const [task, setTask] = useState("Add a small feature and explain the implementation plan.");
+  const [targetDirectory, setTargetDirectory] = useState("agent-output/demo-page");
   const [plan, setPlan] = useState("");
+  const [generation, setGeneration] = useState<CodeGenerateData | null>(null);
+  const [writeResult, setWriteResult] = useState<CodeWriteData | null>(null);
   const [commandResult, setCommandResult] = useState<CodeCommandData | null>(null);
   const [selectedCommand, setSelectedCommand] = useState("git status --short");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [planning, setPlanning] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [writing, setWriting] = useState(false);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,6 +106,45 @@ export function CodeAgentWorkspace() {
       setError(planError instanceof Error ? planError.message : "Failed to create code plan.");
     } finally {
       setPlanning(false);
+    }
+  }
+
+  async function generateFiles() {
+    if (!task.trim() || !targetDirectory.trim()) return;
+    setGenerating(true);
+    setGeneration(null);
+    setWriteResult(null);
+    setError(null);
+    try {
+      const result = await apiClient.generateCodeFiles({
+        task: task.trim(),
+        target_directory: targetDirectory.trim(),
+        file_paths: selectedPaths,
+      });
+      setGeneration(result);
+    } catch (generateError) {
+      setError(generateError instanceof Error ? generateError.message : "Failed to generate files.");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  async function writeGeneratedFiles(overwrite = false) {
+    if (!generation?.files.length) return;
+    setWriting(true);
+    setWriteResult(null);
+    setError(null);
+    try {
+      const result = await apiClient.writeCodeFiles({
+        files: generation.files,
+        overwrite,
+      });
+      setWriteResult(result);
+      await loadWorkspace();
+    } catch (writeError) {
+      setError(writeError instanceof Error ? writeError.message : "Failed to write generated files.");
+    } finally {
+      setWriting(false);
     }
   }
 
@@ -172,7 +223,7 @@ export function CodeAgentWorkspace() {
           <CardHeader>
             <CardTitle>Agent Task</CardTitle>
             <CardDescription>
-              Select up to eight files as context. The model produces a plan and patch-style guidance; it does not silently write files.
+              Select up to eight files as context. The model can plan changes or generate files you can write into the local workspace.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -180,8 +231,30 @@ export function CodeAgentWorkspace() {
               className="min-h-[130px]"
               value={task}
               onChange={(event) => setTask(event.target.value)}
-              placeholder="Describe the coding task..."
+              placeholder="Describe the coding task, page, or small project to create..."
             />
+            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-end">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Write target directory</label>
+                <Input
+                  value={targetDirectory}
+                  onChange={(event) => setTargetDirectory(event.target.value)}
+                  placeholder="agent-output/demo-page"
+                />
+              </div>
+              <Button className="gap-2" onClick={() => void createPlan()} disabled={planning || !task.trim()}>
+                {planning ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                Plan
+              </Button>
+              <Button
+                className="gap-2"
+                onClick={() => void generateFiles()}
+                disabled={generating || !task.trim() || !targetDirectory.trim()}
+              >
+                {generating ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <FileCode2 className="h-4 w-4" />}
+                Generate files
+              </Button>
+            </div>
             <div className="flex flex-wrap gap-2">
               {selectedPaths.map((path) => (
                 <button
@@ -194,18 +267,10 @@ export function CodeAgentWorkspace() {
                 </button>
               ))}
             </div>
-            <Button className="gap-2" onClick={() => void createPlan()} disabled={planning || !task.trim()}>
-              {planning ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-              Generate implementation plan
-            </Button>
           </CardContent>
         </Card>
 
-        {error ? (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-            {error}
-          </div>
-        ) : null}
+        {error ? <ErrorState title="Code Agent Error" description={error} /> : null}
 
         <div className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <Card>
@@ -242,6 +307,63 @@ export function CodeAgentWorkspace() {
             </CardContent>
           </Card>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Generated Files</CardTitle>
+            <CardDescription>
+              Review the model output, then write it into the local workspace. Existing files require explicit overwrite.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {generating ? (
+              <LoadingState label="The local model is creating file contents..." />
+            ) : generation ? (
+              <>
+                {generation.notes ? (
+                  <div className="rounded-2xl border border-border bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+                    {generation.notes}
+                  </div>
+                ) : null}
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {generation.files.map((file) => (
+                    <div key={file.path} className="overflow-hidden rounded-2xl border border-border bg-white">
+                      <div className="flex items-center justify-between gap-3 border-b border-border bg-slate-50 px-4 py-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-slate-900">{file.path}</p>
+                          <p className="text-xs text-slate-500">{file.language} - {file.action}</p>
+                        </div>
+                        <Badge tone={file.exists ? "warning" : "success"}>{file.exists ? "Exists" : "New"}</Badge>
+                      </div>
+                      <pre className="max-h-[320px] overflow-auto bg-slate-950 p-4 text-xs leading-6 text-slate-100">
+                        {file.content}
+                      </pre>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <Button className="gap-2" onClick={() => void writeGeneratedFiles(false)} disabled={writing}>
+                    {writing ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    Write new files
+                  </Button>
+                  <Button variant="secondary" onClick={() => void writeGeneratedFiles(true)} disabled={writing}>
+                    Overwrite if needed
+                  </Button>
+                </div>
+                {writeResult ? (
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                    Wrote {writeResult.written_files.length} file(s): {writeResult.written_files.map((file) => file.path).join(", ")}
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <EmptyState
+                title="No files generated"
+                description="Describe a small page, script, or feature, then use Generate files to create writable file drafts."
+              />
+            )}
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>

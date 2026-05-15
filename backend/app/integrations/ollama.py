@@ -42,8 +42,10 @@ class OllamaClient:
         messages: list[dict[str, str]],
         temperature: float,
         max_tokens: int,
+        timeout: int | None = None,
+        tools: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
-        payload = {
+        payload: dict[str, Any] = {
             "model": model,
             "messages": messages,
             "stream": False,
@@ -52,9 +54,11 @@ class OllamaClient:
                 "num_predict": max_tokens,
             },
         }
+        if tools:
+            payload["tools"] = tools
 
         try:
-            response = self._client.post("/api/chat", json=payload)
+            response = self._client.post("/api/chat", json=payload, timeout=timeout)
             response.raise_for_status()
         except httpx.HTTPError as exc:
             raise AppError(

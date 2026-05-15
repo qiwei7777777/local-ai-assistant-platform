@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 
 const navigation = [
   { href: "/", label: "Chat", icon: Sparkles },
+  { href: "/agent", label: "Agent", icon: Bot },
   { href: "/code-agent", label: "Code Agent", icon: Code2 },
   { href: "/knowledge-bases", label: "Knowledge", icon: BookOpenText },
   { href: "/memories", label: "Memory", icon: Brain },

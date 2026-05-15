@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -37,6 +38,7 @@ class FakeOllamaClient:
         messages: list[dict[str, str]],
         temperature: float,
         max_tokens: int,
+        timeout: int | None = None,
     ) -> dict[str, object]:
         all_content = "\n".join(message["content"] for message in messages)
         last_user_message = next(
@@ -48,6 +50,12 @@ class FakeOllamaClient:
             answer = "Your preferred sign-off word is starlight."
         elif "codename" in last_user_message and "nebula-42" in all_content.lower():
             answer = "The project codename is Nebula-42."
+        elif "return exactly this json shape" in last_user_message:
+            answer = (
+                '{"notes":"Created a tiny demo page.",'
+                '"files":[{"path":"index.html","language":"html",'
+                '"content":"<!doctype html><html><body><h1>Agent demo</h1></body></html>"}]}'
+            )
         else:
             answer = f"This is a local AI assistant response from {model}."
 
@@ -416,6 +424,103 @@ class BackendApiTests(unittest.TestCase):
         command_data = command_response.json()["data"]
         self.assertEqual(command_data["command"], "git status --short")
         self.assertIsInstance(command_data["exit_code"], int)
+
+    def test_code_agent_generates_and_writes_files(self) -> None:
+        output_dir = ROOT / "agent-output"
+        try:
+            generate_response = self.client.post(
+                "/api/code-agent/generate",
+                json={
+                    "task": "Create a tiny static HTML page.",
+                    "target_directory": "agent-output/test-page",
+                    "file_paths": [],
+                    "model": "gemma4:e4b",
+                },
+            )
+            self.assertEqual(generate_response.status_code, 200)
+            generated = generate_response.json()["data"]
+            self.assertEqual(generated["target_directory"], "agent-output/test-page")
+            self.assertEqual(generated["files"][0]["path"], "agent-output/test-page/index.html")
+            self.assertIn("Agent demo", generated["files"][0]["content"])
+
+            write_response = self.client.post(
+                "/api/code-agent/write",
+                json={"files": generated["files"], "overwrite": False},
+            )
+            self.assertEqual(write_response.status_code, 200)
+            written = write_response.json()["data"]["written_files"]
+            self.assertEqual(written[0]["path"], "agent-output/test-page/index.html")
+            self.assertTrue((ROOT / "agent-output" / "test-page" / "index.html").exists())
+
+            overwrite_blocked = self.client.post(
+                "/api/code-agent/write",
+                json={"files": generated["files"], "overwrite": False},
+            )
+            self.assertEqual(overwrite_blocked.status_code, 409)
+            self.assertEqual(overwrite_blocked.json()["error"]["code"], "CODE_FILE_EXISTS")
+
+            outside_write = self.client.post(
+                "/api/code-agent/write",
+                json={
+                    "files": [
+                        {
+                            "path": "../outside.html",
+                            "content": "<h1>Nope</h1>",
+                            "language": "html",
+                        }
+                    ],
+                    "overwrite": False,
+                },
+            )
+            self.assertEqual(outside_write.status_code, 400)
+            self.assertEqual(outside_write.json()["error"]["code"], "CODE_PATH_OUTSIDE_WORKSPACE")
+        finally:
+            shutil.rmtree(output_dir, ignore_errors=True)
+
+
+    def test_code_agent_file_too_large(self) -> None:
+        large_dir = Path(self.temp_dir.name) / "large-test"
+        large_dir.mkdir(exist_ok=True)
+        large_file = large_dir / "big.txt"
+        large_file.write_text("x" * 200_000, encoding="utf-8")
+
+        large_settings = Settings(
+            _env_file=None,
+            CODE_WORKSPACE_ROOT=large_dir.as_posix(),
+            CODE_AGENT_MAX_FILE_BYTES=120_000,
+        )
+
+        original_override = app.dependency_overrides.get(get_settings_dependency)
+        app.dependency_overrides[get_settings_dependency] = lambda: large_settings
+        try:
+            read_resp = self.client.post("/api/code-agent/read", json={"path": "big.txt"})
+            self.assertEqual(read_resp.status_code, 413)
+            self.assertEqual(read_resp.json()["error"]["code"], "CODE_FILE_TOO_LARGE")
+        finally:
+            if original_override:
+                app.dependency_overrides[get_settings_dependency] = original_override
+            else:
+                app.dependency_overrides.pop(get_settings_dependency, None)
+            shutil.rmtree(large_dir, ignore_errors=True)
+
+    def test_code_agent_workspace_not_found(self) -> None:
+        missing_dir = Path(self.temp_dir.name) / "nonexistent-workspace"
+        bad_settings = Settings(
+            _env_file=None,
+            CODE_WORKSPACE_ROOT=missing_dir.as_posix(),
+        )
+
+        original_override = app.dependency_overrides.get(get_settings_dependency)
+        app.dependency_overrides[get_settings_dependency] = lambda: bad_settings
+        try:
+            resp = self.client.get("/api/code-agent/workspace")
+            self.assertEqual(resp.status_code, 500)
+            self.assertEqual(resp.json()["error"]["code"], "CODE_WORKSPACE_NOT_FOUND")
+        finally:
+            if original_override:
+                app.dependency_overrides[get_settings_dependency] = original_override
+            else:
+                app.dependency_overrides.pop(get_settings_dependency, None)
 
 
 if __name__ == "__main__":

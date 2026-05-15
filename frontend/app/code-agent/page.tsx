@@ -7,8 +7,8 @@ export default function CodeAgentPage() {
       <PageHeader
         eyebrow="Code Agent"
         title="Agentic Coding Workspace"
-        description="Inspect the local repository, select files as context, ask the model for implementation plans, and run safe validation commands."
-        status="Workspace-aware and audit-friendly"
+        description="Inspect the local repository, generate file drafts, write approved files into the workspace, and run safe validation commands."
+        status="Workspace-aware file writer"
       />
       <CodeAgentWorkspace />
     </>

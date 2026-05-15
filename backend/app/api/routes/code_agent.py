@@ -1,7 +1,13 @@
 from fastapi import APIRouter, Depends
 
 from app.api.deps import get_code_agent_service
-from app.schemas.code_agent import CodeCommandRequest, CodePlanRequest, CodeReadRequest
+from app.schemas.code_agent import (
+    CodeCommandRequest,
+    CodeGenerateRequest,
+    CodePlanRequest,
+    CodeReadRequest,
+    CodeWriteRequest,
+)
 from app.schemas.common import ApiResponse
 from app.services.code_agent_service import CodeAgentService
 from app.utils.responses import success_response
@@ -31,6 +37,25 @@ def create_plan(payload: CodePlanRequest, service: CodeAgentService = Depends(ge
             max_tokens=payload.max_tokens,
         ).model_dump()
     )
+
+
+@router.post("/generate", response_model=ApiResponse)
+def generate_files(payload: CodeGenerateRequest, service: CodeAgentService = Depends(get_code_agent_service)) -> dict:
+    return success_response(
+        service.generate_files(
+            task=payload.task,
+            target_directory=payload.target_directory,
+            file_paths=payload.file_paths,
+            model=payload.model,
+            temperature=payload.temperature,
+            max_tokens=payload.max_tokens,
+        ).model_dump()
+    )
+
+
+@router.post("/write", response_model=ApiResponse)
+def write_files(payload: CodeWriteRequest, service: CodeAgentService = Depends(get_code_agent_service)) -> dict:
+    return success_response(service.write_files(files=payload.files, overwrite=payload.overwrite).model_dump())
 
 
 @router.post("/command", response_model=ApiResponse)

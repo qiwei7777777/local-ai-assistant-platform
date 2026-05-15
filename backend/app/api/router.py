@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from app.api.routes.agent import router as agent_router
 from app.api.routes.chat import router as chat_router
 from app.api.routes.code_agent import router as code_agent_router
 from app.api.routes.files import router as files_router
@@ -15,6 +16,7 @@ api_router = APIRouter()
 api_router.include_router(health_router)
 api_router.include_router(models_router)
 api_router.include_router(chat_router)
+api_router.include_router(agent_router)
 api_router.include_router(code_agent_router)
 api_router.include_router(sessions_router)
 api_router.include_router(messages_router)

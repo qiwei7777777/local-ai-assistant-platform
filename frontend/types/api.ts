@@ -184,10 +184,58 @@ export type CodePlanData = {
   plan: string;
 };
 
+export type CodeGeneratedFile = {
+  path: string;
+  content: string;
+  language: string;
+  action: string;
+  exists: boolean;
+};
+
+export type CodeGenerateData = {
+  task: string;
+  model: string;
+  target_directory: string;
+  files: CodeGeneratedFile[];
+  notes: string;
+};
+
+export type CodeWrittenFile = {
+  path: string;
+  bytes: number;
+  created: boolean;
+};
+
+export type CodeWriteData = {
+  written_files: CodeWrittenFile[];
+};
+
 export type CodeCommandData = {
   command: string;
   exit_code: number;
   stdout: string;
   stderr: string;
   duration_ms: number;
+};
+
+export type AgentToolCall = {
+  name: string;
+  arguments: Record<string, unknown>;
+};
+
+export type AgentToolCallRecord = {
+  tool_name: string;
+  arguments: Record<string, unknown>;
+  result_summary: string;
+  duration_ms: number;
+};
+
+export type AgentChatData = {
+  session_id: string;
+  user_message_id: string;
+  assistant_message_id: string;
+  model: string;
+  content: string;
+  tool_calls_made: AgentToolCallRecord[];
+  iterations: number;
 };

@@ -13,6 +13,8 @@ from app.repositories.knowledge_base_repository import KnowledgeBaseRepository
 from app.repositories.memory_repository import MemoryRepository
 from app.repositories.message_repository import MessageRepository
 from app.repositories.session_repository import SessionRepository
+
+logger = logging.getLogger(__name__)
 from app.schemas.chat import ChatRequest, ChatResponseData, ChatMessageData, ChatSessionData
 from app.services.memory_service import MemoryService
 from app.services.retrieval_service import RetrievalService
@@ -51,6 +53,7 @@ class ChatService:
 
             response_data = self._finalize_chat(prepared_chat, assistant_content)
         except Exception:
+            logger.exception("Chat completion failed, rolling back transaction")
             self.db.rollback()
             raise
 
@@ -107,6 +110,7 @@ class ChatService:
                 )
             raise
         except AppError as exc:
+            logger.exception("Chat stream failed with domain error, rolling back")
             self.db.rollback()
             yield self._format_sse_event(
                 "error",
@@ -117,6 +121,7 @@ class ChatService:
                 },
             )
         except Exception as exc:
+            logger.exception("Chat stream failed with unexpected error, rolling back")
             self.db.rollback()
             yield self._format_sse_event(
                 "error",
@@ -285,6 +290,7 @@ class ChatService:
         try:
             self._finalize_chat(prepared_chat, assistant_content)
         except Exception:
+            logger.exception("Failed to finalize partial stream chat, rolling back")
             self.db.rollback()
 
     def _resolve_selected_model(self, requested_model: str | None) -> str:

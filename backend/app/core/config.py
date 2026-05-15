@@ -68,6 +68,7 @@ class Settings(BaseSettings):
     code_workspace_root: str = Field(default="..", alias="CODE_WORKSPACE_ROOT")
     code_agent_max_file_bytes: int = Field(default=120_000, alias="CODE_AGENT_MAX_FILE_BYTES")
     code_agent_command_timeout: int = Field(default=60, alias="CODE_AGENT_COMMAND_TIMEOUT")
+    code_agent_model_timeout: int = Field(default=300, alias="CODE_AGENT_MODEL_TIMEOUT")
 
     @property
     def code_workspace_path(self) -> Path:
